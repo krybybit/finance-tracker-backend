@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-const API_URL ='https://finance-tracker-weld-theta.vercel.app';
+const API_URL ='https://finance-tracker-backend-production-c343.up.railway.app';
 const initData = tg.initData;
 
 document.getElementById('transactionForm').addEventListener('submit', async (e) => {
