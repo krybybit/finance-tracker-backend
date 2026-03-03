@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-const API_URL = process.env.API_URL || 'https://finance-tracker-weld-theta.vercel.app';
+const API_URL ='https://finance-tracker-weld-theta.vercel.app';
 const initData = tg.initData;
 
 document.getElementById('transactionForm').addEventListener('submit', async (e) => {
@@ -34,7 +34,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
 
 async function loadTransactions() {
     try {
-        const response = await fetch(`${API_URL}/transactions/`, {
+        const response = await fetch(`${API_URL}/api/transactions/`, {
             headers: { 'telegram-init-data': initData }
         });
         const transactions = await response.json();

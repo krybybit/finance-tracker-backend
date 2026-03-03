@@ -1,22 +1,21 @@
 import hmac
 import hashlib
+import json
 from urllib.parse import parse_qs
 from app.config import settings
 
-import json
-from urllib.parse import parse_qsl
-
 def validate_telegram_init_data(init_data: str) -> bool:
     try:
-        parsed = dict(parse_qsl(init_data))
-        received_hash = parsed.pop('hash', None)
+        parsed_data = parse_qs(init_data)
+        received_hash = parsed_data.get('hash', [None])[0]
         if not received_hash:
             return False
         
-        # Сортировка и формирование строки данных
-        data_check_string = '\n'.join(f"{k}={v}" for k, v in sorted(parsed.items()))
+        data_to_check = {k: v[0] for k, v in parsed_data.items() if k != 'hash'}
+        sorted_data = sorted(data_to_check.items())
+        # ✅ Важно: \n между парами key=value
+        data_string = '\n'.join(f"{k}={v}" for k, v in sorted_data)
         
-        # Генерация секретного ключа
         secret_key = hmac.new(
             b'WebAppData',
             settings.BOT_TOKEN.encode(),
@@ -25,16 +24,23 @@ def validate_telegram_init_data(init_data: str) -> bool:
         
         calculated_hash = hmac.new(
             secret_key,
-            data_check_string.encode(),
+            data_string.encode(),
             hashlib.sha256
         ).hexdigest()
         
         return hmac.compare_digest(calculated_hash, received_hash)
-    except Exception:
+    except Exception as e:
+        print(f"Validation error: {e}")
         return False
 
 def get_user_from_init_data(init_data: str) -> dict:
-    """Правильное извлечение user из initData"""
-    parsed = dict(parse_qsl(init_data))
-    user_json = parsed.get('user', '{}')
-    return json.loads(user_json)  # Теперь вернёт dict с id, username и т.д.
+    parsed_data = parse_qs(init_data)
+    user_json = parsed_data.get('user', ['{}'])[0]
+    return json.loads(user_json) 
+    
+    return {
+        'id': user_data.get('id'),
+        'username': user_data.get('username'),
+        'first_name': user_data.get('first_name'),
+        'last_name': user_data.get('last_name')
+    }
