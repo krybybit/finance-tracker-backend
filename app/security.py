@@ -38,9 +38,3 @@ def get_user_from_init_data(init_data: str) -> dict:
     user_json = parsed_data.get('user', ['{}'])[0]
     return json.loads(user_json) 
     
-    return {
-        'id': user_data.get('id'),
-        'username': user_data.get('username'),
-        'first_name': user_data.get('first_name'),
-        'last_name': user_data.get('last_name')
-    }
