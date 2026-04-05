@@ -2,7 +2,7 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 tg.ready();
 
-const API_URL = 'https://finance-tracker-backend-production-c343.up.railway.app';
+const API_URL = 'https://finance-tracker-backend-k2nw.onrender.com';
 const initData = tg.initData;
 
 // Переключение вкладок
