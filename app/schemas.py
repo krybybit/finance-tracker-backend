@@ -9,6 +9,15 @@ class TransactionCreate(BaseModel):
     category_id: int
     comment: Optional[str] = None
 
+class TransactionUpdate(BaseModel):  # ✅ НОВАЯ СХЕМА
+    amount: Optional[float] = Field(None, gt=0)
+    type: Optional[TransactionType] = None
+    category_id: Optional[int] = None
+    comment: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class TransactionResponse(BaseModel):
     id: int
     amount: float
@@ -16,6 +25,7 @@ class TransactionResponse(BaseModel):
     category_id: int
     comment: Optional[str]
     created_at: datetime
+    
     class Config:
         from_attributes = True
 
@@ -27,5 +37,6 @@ class CategoryResponse(BaseModel):
     id: int
     name: str
     icon: str
+    
     class Config:
         from_attributes = True
