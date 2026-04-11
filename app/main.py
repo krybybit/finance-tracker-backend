@@ -33,6 +33,7 @@ async def startup_event():
             {"name": "🍔 Продукты", "icon": "🍔"},
             {"name": "🚗 Транспорт", "icon": "🚗"},
             {"name": "💼 Зарплата", "icon": "💼"},
+            {"id": 4, "name": "Прочее", "icon": "🔹"},
         ]
         for cat in default_categories:
             if not db.query(Category).filter(Category.name == cat["name"]).first():
