@@ -4,6 +4,7 @@ from app.database import get_db
 from app.models import Category, User
 from app.schemas import CategoryCreate, CategoryResponse
 from app.security import validate_telegram_init_data, get_user_from_init_data
+
 from typing import List
 
 router = APIRouter(prefix="/categories", tags=["categories"])
