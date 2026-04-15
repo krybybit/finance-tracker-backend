@@ -1,18 +1,48 @@
 const tg = window.Telegram.WebApp;
-let Chart = null; // Для диаграмм
+let Chart = null; 
+
+// 1. Сначала расширяем и сообщаем о готовности
 tg.expand();
 tg.ready();
 
 const API_URL = 'https://finance-tracker-backend-k2nw.onrender.com';
-const initData = tg.initData;
+
+// ✅ ВАЖНО: Мы не сохраняем initData в переменную навсегда.
+// Мы будем брать tg.initData в момент каждого запроса, чтобы он был свежим.
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Запускаем загрузку только когда DOM полностью готов
+    initializeApp();
+});
+
+async function initializeApp() {
+    // Проверяем, есть ли данные пользователя
+    if (!tg.initDataUnsafe.user) {
+        // Если открыли в браузере, а не в Telegram
+        console.warn("Открыто вне Telegram. Некоторые функции могут не работать.");
+    }
+    
+    // Загружаем данные
+    await loadTransactions();
+}
 
 // Переключение вкладок
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabName + 'Tab').classList.add('active');
-    event.target.classList.add('active');
     
+    // Находим нужную вкладку
+    const activeTab = document.getElementById(tabName + 'Tab');
+    if (activeTab) activeTab.classList.add('active');
+
+    // ✅ ИСПРАВЛЕНИЕ: Безопасное выделение кнопки без использования глобального event
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(tabName)) {
+            btn.classList.add('active');
+        }
+    });
+
     if (tabName === 'statistics') {
         loadStatistics();
     } else if (tabName === 'charts') {
@@ -34,7 +64,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'telegram-init-data': initData
+                'telegram-init-data': tg.initData // Берем актуальный initData
             },
             body: JSON.stringify({ amount, type, category_id, comment })
         });
@@ -44,9 +74,11 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
             document.getElementById('transactionForm').reset();
             loadTransactions();
         } else {
-            tg.showAlert('Ошибка при добавлении транзакции');
+            const errorData = await response.json();
+            tg.showAlert('Ошибка: ' + (errorData.detail || 'Не удалось добавить'));
         }
     } catch (error) {
+        console.error(error);
         tg.showAlert('Ошибка соединения');
     }
 });
@@ -54,26 +86,32 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
 // Загрузка транзакций
 async function loadTransactions() {
     try {
+        // ✅ ИСПРАВЛЕНИЕ: Используем tg.initData напрямую здесь
         const response = await fetch(`${API_URL}/api/transactions/`, {
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
+        
+        if (!response.ok) throw new Error('Ошибка загрузки данных');
+
         const transactions = await response.json();
         renderTransactions(transactions);
     } catch (error) {
         console.error('Ошибка загрузки:', error);
+        // Не сбрасываем баланс в 0 при ошибке, показываем уведомление
+        tg.showAlert('Не удалось загрузить транзакции. Проверьте интернет.');
     }
 }
 
 // Удаление транзакции
 async function deleteTransaction(id) {
     if (!confirm('Удалить эту транзакцию?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/api/transactions/${id}`, {
             method: 'DELETE',
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
-        
+
         if (response.ok) {
             tg.showAlert('Транзакция удалена');
             loadTransactions();
@@ -97,7 +135,7 @@ window.onclick = function(event) {
 async function loadStatistics() {
     try {
         const response = await fetch(`${API_URL}/api/transactions/statistics`, {
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
         const stats = await response.json();
         
@@ -107,10 +145,11 @@ async function loadStatistics() {
         const categoryStats = document.getElementById('categoryStats');
         categoryStats.innerHTML = '';
         
-        stats.by_category.forEach(cat => {
-            const div = document.createElement('div');
-            div.className = 'category-stat';
-            div.innerHTML = `
+        if (stats.total_expense > 0) {
+            stats.by_category.forEach(cat => {
+                const div = document.createElement('div');
+                div.className = 'category-stat';
+                div.innerHTML = `
                 <div class="category-header">
                     <span>${cat.icon} ${cat.category}</span>
                     <span>${cat.total.toLocaleString()} ₽</span>
@@ -119,9 +158,12 @@ async function loadStatistics() {
                     <div class="progress" style="width: ${(cat.total / stats.total_expense * 100)}%"></div>
                 </div>
                 <small>${cat.count} транзакций</small>
-            `;
-            categoryStats.appendChild(div);
-        });
+                `;
+                categoryStats.appendChild(div);
+            });
+        } else {
+            categoryStats.innerHTML = '<p style="text-align:center; color:#888;">Пока нет расходов</p>';
+        }
     } catch (error) {
         console.error('Ошибка загрузки статистики:', error);
     }
@@ -137,12 +179,13 @@ async function loadChartJS() {
         Chart = window.Chart;
     }
 }
+
 // ✅ ПОИСК ТРАНЗАКЦИЙ
 async function searchTransactions() {
     const search = document.getElementById('searchInput').value;
     try {
         const response = await fetch(`${API_URL}/api/transactions/filter?search=${search}`, {
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
         const transactions = await response.json();
         renderTransactions(transactions);
@@ -150,6 +193,7 @@ async function searchTransactions() {
         console.error('Ошибка поиска:', error);
     }
 }
+
 // ✅ ПРИМЕНЕНИЕ ФИЛЬТРОВ
 async function applyFilters() {
     const type = document.getElementById('filterType').value;
@@ -165,7 +209,7 @@ async function applyFilters() {
     
     try {
         const response = await fetch(url, {
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
         const transactions = await response.json();
         renderTransactions(transactions);
@@ -184,7 +228,7 @@ function clearFilters() {
     loadTransactions();
 }
 
-// ✅ ОТРИСОВКА ТРАНЗАКЦИЙ (обновлённая)
+// ✅ ОТРИСОВКА ТРАНЗАКЦИЙ
 function renderTransactions(transactions) {
     const list = document.getElementById('transactionsList');
     list.innerHTML = '';
@@ -195,19 +239,23 @@ function renderTransactions(transactions) {
         const div = document.createElement('div');
         div.className = `transaction ${t.type}`;
         div.innerHTML = `
-            <div onclick="openEditModal(${t.id}, ${t.amount}, '${t.type}', ${t.category_id}, '${t.comment || ''}')">
-                <span class="comment">${t.comment || 'Без комментария'}</span>
-                <span class="amount">${t.amount} ₽</span>
-            </div>
-            <div>
-                <button class="edit-btn" onclick="openEditModal(${t.id}, ${t.amount}, '${t.type}', ${t.category_id}, '${t.comment || ''}')">✏️</button>
-                <button class="delete-btn" onclick="deleteTransaction(${t.id})">🗑️</button>
-            </div>
+        <div onclick="openEditModal(${t.id}, ${t.amount}, '${t.type}', ${t.category_id}, '${t.comment || ''}')">
+            <span class="comment">${t.comment || 'Без комментария'}</span>
+            <span class="amount">${t.amount} ₽</span>
+        </div>
+        <div>
+            <button class="edit-btn" onclick="openEditModal(${t.id}, ${t.amount}, '${t.type}', ${t.category_id}, '${t.comment || ''}')">✏️</button>
+            <button class="delete-btn" onclick="deleteTransaction(${t.id})">🗑️</button>
+        </div>
         `;
         list.appendChild(div);
     });
     
-    document.getElementById('balance').textContent = `Баланс: ${balance} ₽`;
+    // Обновляем баланс в шапке
+    const balanceEl = document.getElementById('balance');
+    if (balanceEl) {
+        balanceEl.textContent = `Баланс: ${balance.toLocaleString()} ₽`;
+    }
 }
 
 // ✅ ОТКРЫТЬ МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ
@@ -239,11 +287,11 @@ document.getElementById('editTransactionForm').addEventListener('submit', async 
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'telegram-init-data': initData
+                'telegram-init-data': tg.initData
             },
             body: JSON.stringify({ amount, type, category_id, comment })
         });
-        
+
         if (response.ok) {
             tg.showAlert('Транзакция обновлена!');
             closeEditModal();
@@ -260,22 +308,23 @@ document.getElementById('editTransactionForm').addEventListener('submit', async 
 async function exportToCSV() {
     try {
         const response = await fetch(`${API_URL}/api/transactions/`, {
-            headers: { 'telegram-init-data': initData }
+            headers: { 'telegram-init-data': tg.initData }
         });
+
         const transactions = await response.json();
-        
+
         let csv = 'ID,Сумма,Тип,Категория,Комментарий,Дата\n';
         transactions.forEach(t => {
             csv += `${t.id},${t.amount},${t.type},${t.category_id},"${t.comment || ''}",${t.created_at}\n`;
         });
-        
+
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
-        
+
         tg.showAlert('Экспорт выполнен!');
     } catch (error) {
         tg.showAlert('Ошибка экспорта');
@@ -285,9 +334,9 @@ async function exportToCSV() {
 // ✅ ДИАГРАММА РАСХОДОВ
 async function loadExpenseChart() {
     await loadChartJS();
-    
+
     const response = await fetch(`${API_URL}/api/transactions/statistics`, {
-        headers: { 'telegram-init-data': initData }
+        headers: { 'telegram-init-data': tg.initData }
     });
     const stats = await response.json();
     
@@ -303,16 +352,12 @@ async function loadExpenseChart() {
             labels: stats.by_category.map(c => `${c.icon} ${c.category}`),
             datasets: [{
                 data: stats.by_category.map(c => c.total),
-                backgroundColor: [
-                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
-                ]
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { position: 'bottom' }
-            }
+            plugins: { legend: { position: 'bottom' } }
         }
     });
 }
@@ -320,9 +365,9 @@ async function loadExpenseChart() {
 // ✅ МЕСЯЧНАЯ ДИАГРАММА
 async function loadMonthlyChart() {
     await loadChartJS();
-    
+
     const response = await fetch(`${API_URL}/api/transactions/statistics/monthly`, {
-        headers: { 'telegram-init-data': initData }
+        headers: { 'telegram-init-data': tg.initData }
     });
     const data = await response.json();
     
@@ -337,26 +382,15 @@ async function loadMonthlyChart() {
         data: {
             labels: data.months.map(m => m.month_name.substring(0, 3)),
             datasets: [
-                {
-                    label: 'Доходы',
-                    data: data.months.map(m => m.income),
-                    backgroundColor: '#48bb78'
-                },
-                {
-                    label: 'Расходы',
-                    data: data.months.map(m => m.expense),
-                    backgroundColor: '#f56565'
-                }
+                { label: 'Доходы', data: data.months.map(m => m.income), backgroundColor: '#48bb78' },
+                { label: 'Расходы', data: data.months.map(m => m.expense), backgroundColor: '#f56565' }
             ]
         },
         options: {
             responsive: true,
-            scales: {
-                y: { beginAtZero: true }
-            }
+
+            scales: { y: { beginAtZero: true } }
         }
     });
 }
 
-// Загрузка при старте
-loadTransactions();
