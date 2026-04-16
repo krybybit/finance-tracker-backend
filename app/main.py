@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.api import api_router  # ✅ ИМПОРТИРУЕМ api_router
+from app.api import api_router  
 from app.bot.bot import start_bot
 import asyncio
 from app.config import settings
@@ -19,7 +19,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ ПОДКЛЮЧАЕМ api_router ВМЕСТО transactions.router
 app.include_router(api_router)
 
 @app.on_event("startup")

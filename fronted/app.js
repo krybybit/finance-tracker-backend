@@ -1,41 +1,34 @@
 const tg = window.Telegram.WebApp;
 let Chart = null; 
 
-// 1. Сначала расширяем и сообщаем о готовности
 tg.expand();
 tg.ready();
 
 const API_URL = 'https://finance-tracker-backend-k2nw.onrender.com';
 
-// ✅ ВАЖНО: Мы не сохраняем initData в переменную навсегда.
-// Мы будем брать tg.initData в момент каждого запроса, чтобы он был свежим.
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Запускаем загрузку только когда DOM полностью готов
+
     initializeApp();
 });
 
 async function initializeApp() {
-    // Проверяем, есть ли данные пользователя
+
     if (!tg.initDataUnsafe.user) {
-        // Если открыли в браузере, а не в Telegram
+
         console.warn("Открыто вне Telegram. Некоторые функции могут не работать.");
     }
-    
-    // Загружаем данные
+
     await loadTransactions();
 }
 
-// Переключение вкладок
+
 function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    
-    // Находим нужную вкладку
+
     const activeTab = document.getElementById(tabName + 'Tab');
     if (activeTab) activeTab.classList.add('active');
 
-    // ✅ ИСПРАВЛЕНИЕ: Безопасное выделение кнопки без использования глобального event
     const buttons = document.querySelectorAll('.tab-btn');
     buttons.forEach(btn => {
         if (btn.getAttribute('onclick').includes(tabName)) {
@@ -64,7 +57,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'telegram-init-data': tg.initData // Берем актуальный initData
+                'telegram-init-data': tg.initData 
             },
             body: JSON.stringify({ amount, type, category_id, comment })
         });
@@ -86,7 +79,7 @@ document.getElementById('transactionForm').addEventListener('submit', async (e) 
 // Загрузка транзакций
 async function loadTransactions() {
     try {
-        // ✅ ИСПРАВЛЕНИЕ: Используем tg.initData напрямую здесь
+
         const response = await fetch(`${API_URL}/api/transactions/`, {
             headers: { 'telegram-init-data': tg.initData }
         });
@@ -97,7 +90,6 @@ async function loadTransactions() {
         renderTransactions(transactions);
     } catch (error) {
         console.error('Ошибка загрузки:', error);
-        // Не сбрасываем баланс в 0 при ошибке, показываем уведомление
         tg.showAlert('Не удалось загрузить транзакции. Проверьте интернет.');
     }
 }
@@ -169,7 +161,7 @@ async function loadStatistics() {
     }
 }
 
-// ✅ ЗАГРУЗКА CHART.JS
+//  ЗАГРУЗКА CHART.JS 
 async function loadChartJS() {
     if (!Chart) {
         const script = document.createElement('script');
@@ -180,7 +172,8 @@ async function loadChartJS() {
     }
 }
 
-// ✅ ПОИСК ТРАНЗАКЦИЙ
+
+//  ПОИСК ТРАНЗАКЦИЙ
 async function searchTransactions() {
     const search = document.getElementById('searchInput').value;
     try {
@@ -194,7 +187,7 @@ async function searchTransactions() {
     }
 }
 
-// ✅ ПРИМЕНЕНИЕ ФИЛЬТРОВ
+//  ПРИМЕНЕНИЕ ФИЛЬТРОВ
 async function applyFilters() {
     const type = document.getElementById('filterType').value;
     const category_id = document.getElementById('filterCategory').value;
@@ -218,7 +211,7 @@ async function applyFilters() {
     }
 }
 
-// ✅ СБРОС ФИЛЬТРОВ
+//  СБРОС ФИЛЬТРОВ
 function clearFilters() {
     document.getElementById('searchInput').value = '';
     document.getElementById('filterType').value = '';
@@ -228,7 +221,7 @@ function clearFilters() {
     loadTransactions();
 }
 
-// ✅ ОТРИСОВКА ТРАНЗАКЦИЙ
+//  ОТРИСОВКА ТРАНЗАКЦИЙ
 function renderTransactions(transactions) {
     const list = document.getElementById('transactionsList');
     list.innerHTML = '';

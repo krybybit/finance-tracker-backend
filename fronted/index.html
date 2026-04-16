@@ -9,13 +9,12 @@
 </head>
 <body>
     <div class="container">
-        <!-- HEADER -->
+
         <header>
             <h1>💰 Мои Финансы</h1>
             <div id="balance">Баланс: 0 ₽</div>
         </header>
 
-        <!-- 🔍 ФИЛЬТРЫ И ПОИСК -->
         <div class="filters-section">
             <div class="search-box">
                 <input type="text" id="searchInput" placeholder="🔍 Поиск транзакций...">
@@ -47,7 +46,7 @@
             <button class="tab-btn charts" onclick="showTab('charts')">📊 Графики</button>
         </div>
 
-        <!-- ✅ ВКЛАДКА: ТРАНЗАКЦИИ -->
+        <!-- ВКЛАДКА: ТРАНЗАКЦИИ -->
         <div id="transactionsTab" class="tab-content active">
             <form id="transactionForm">
                 <input type="number" id="amount" placeholder="Сумма" required step="0.01">
@@ -67,7 +66,7 @@
             <div id="transactionsList"></div>
         </div>
 
-        <!-- ✅ ВКЛАДКА: СТАТИСТИКА -->
+        <!-- ВКЛАДКА: СТАТИСТИКА -->
         <div id="statisticsTab" class="tab-content">
             <button onclick="exportToCSV()" class="export-btn">📥 Экспорт в CSV</button>
             <div class="stats-summary">
@@ -84,7 +83,7 @@
             <div id="categoryStats"></div>
         </div>
 
-        <!-- ✅ ВКЛАДКА: ГРАФИКИ -->
+        <!-- ВКЛАДКА: ГРАФИКИ -->
         <div id="chartsTab" class="tab-content">
             <h3>📈 Визуализация расходов</h3>
             <div class="chart-container">

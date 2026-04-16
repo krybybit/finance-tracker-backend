@@ -394,7 +394,7 @@ form button[type="submit"]:active {
   }
 }
 
-/* Добавь в конец файла */
+
 
 /* 🔍 Поиск и фильтры */
 .filters-section {
@@ -481,7 +481,6 @@ form button[type="submit"]:active {
     box-shadow: var(--card-shadow, 0 4px 20px rgba(0,0,0,0.1));
 }
 
-/* 📥 Экспорт */
 .export-btn {
     width: 100%;
     padding: 14px;

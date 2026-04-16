@@ -9,7 +9,7 @@ class TransactionCreate(BaseModel):
     category_id: int
     comment: Optional[str] = None
 
-class TransactionUpdate(BaseModel):  # ✅ НОВАЯ СХЕМА
+class TransactionUpdate(BaseModel): 
     amount: Optional[float] = Field(None, gt=0)
     type: Optional[TransactionType] = None
     category_id: Optional[int] = None

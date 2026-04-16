@@ -13,7 +13,7 @@ def validate_telegram_init_data(init_data: str) -> bool:
         
         data_to_check = {k: v[0] for k, v in parsed_data.items() if k != 'hash'}
         sorted_data = sorted(data_to_check.items())
-        # ✅ Важно: \n между парами key=value
+
         data_string = '\n'.join(f"{k}={v}" for k, v in sorted_data)
         
         secret_key = hmac.new(
